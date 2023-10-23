@@ -5,11 +5,38 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model=User
         fields=['id','name','email']
-    
+        
+class PostSerializer_for_comment(serializers.ModelSerializer):
+    class Meta:
+        model=Post
+        fields=['uid','caption','media','created_at']
 class CommentSerialiser(serializers.ModelSerializer):
+    author = UserSerializer( read_only=True)
+    post = PostSerializer_for_comment( read_only=True)
     class Meta:
         model=Comment
         fields="__all__"
+
+class CommentSerializer_save(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        # fields = ('uid', 'author', 'text', 'created_at', 'post')
+        fields="__all__"
+        read_only_fields = ('author',)
+        ordering = ('created_at',)
+
+    def create(self, validated_data):
+        print('--------------------------------')
+        print(validated_data)
+        print('--------------------------------')
+        comment = Comment(
+            author=self.context['request'].user,
+            text=validated_data['text'],
+            post=validated_data['post']
+        )
+        comment.save()
+        return comment
+        # return validated_data
         
 class LikeSerialiser(serializers.ModelSerializer):
     class Meta:
@@ -18,12 +45,13 @@ class LikeSerialiser(serializers.ModelSerializer):
 
 class PostSerialiser(serializers.ModelSerializer):
     author = UserSerializer( read_only=True)
+    comments = CommentSerialiser(many=True, read_only=True)
 
     class Meta:
         model=Post
         fields="__all__"
     def validate(self,data):
-        if(data['media'] is None and not data['caption']):
+        if(data.get('media') is None and not data['caption']):
             raise serializers.ValidationError("caption or media should not be empty")
         return data
     
@@ -37,7 +65,10 @@ class PostSerialiser(serializers.ModelSerializer):
             
 class PostListSerialiser(serializers.ModelSerializer):
     author = UserSerializer(read_only=True) 
+    comments = CommentSerialiser(many=True, read_only=True)
     class Meta:
         model=Post
         fields="__all__"
+
+
             
