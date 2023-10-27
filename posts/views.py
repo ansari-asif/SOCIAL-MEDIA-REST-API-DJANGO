@@ -68,15 +68,18 @@ class CommentList(APIView):
 
     def post(self, request,post_id):
         try:           
-            post=Post.objects.get(pk=post_id)           
-            data = request.POST.copy() 
-            data['post']=post.uid
-            
-            serializer = CommentSerializer_save(data=data, context={'request': request})
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            post=Post.objects.get(pk=post_id)       
+            # print(f"--------------{post}------------------")
+            if post is not None:                    
+                data = request.POST.copy() 
+                data['post']=post.uid                
+                serializer = CommentSerializer_save(data=data, context={'request': request})
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({"message": "Invalid post id"},status=status.HTTP_400_BAD_REQUEST)
         except Exception:
             print('--------------------------------')
             print('getting error ')
@@ -121,5 +124,8 @@ class CommentDetail(APIView):
             comment = self.get_comment(comment_id,post_id)
         except Comment.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        comment.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        if comment is not None:
+            comment.delete()
+            return Response({"message":"comment deleted successfully."},status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response({"message":"comment not found."},status=status.HTTP_404_NOT_FOUND)
