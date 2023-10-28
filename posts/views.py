@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from posts.models import Post,Like,Comment
 from accounts.models import User
-from posts.serialiser import PostSerialiser,PostListSerialiser,CommentSerialiser,LikeSerialiser,CommentSerializer_save
+from posts.serialiser import PostSerialiser,PostListSerialiser,CommentSerialiser,LikeSerialiser,CommentSerializer_save,CommentSerialiser_add
 from rest_framework.permissions import IsAuthenticated
 
 
@@ -59,31 +59,30 @@ class PostDetailsView(APIView):
 class CommentList(APIView):
     permission_classes=[IsAuthenticated]
     def get(self, request,post_id):
-        # print("--------------------------------")
-        # print(post_id)
-        # print("--------------------------------")
         comments = Comment.objects.filter(post=post_id)
         serializer = CommentSerialiser(comments, many=True)
         return Response(serializer.data)
 
-    def post(self, request,post_id):
-        try:           
-            post=Post.objects.get(pk=post_id)       
-            # print(f"--------------{post}------------------")
-            if post is not None:                    
-                data = request.POST.copy() 
-                data['post']=post.uid                
-                serializer = CommentSerializer_save(data=data, context={'request': request})
+    def post(self, request, post_id):
+        try:
+            post = Post.objects.get(uid=post_id)
+            if post is not None:
+                data = request.data.copy()
+                data['post'] = post.uid
+                data['author'] = request.user.id
+                serializer = CommentSerialiser_add(data=data)
                 if serializer.is_valid():
                     serializer.save()
                     return Response(serializer.data, status=status.HTTP_201_CREATED)
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             else:
-                return Response({"message": "Invalid post id"},status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
+                return Response({"message": "Invalid post id"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
             print('--------------------------------')
-            print('getting error ')
+            print('Getting error ')
+            print(e)
             print("--------------------------------")
+            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)       
         
 class CommentDetail(APIView):
     permission_classes=[IsAuthenticated]

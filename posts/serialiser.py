@@ -19,16 +19,32 @@ class CommentSerialiser(serializers.ModelSerializer):
     class Meta:
         model=Comment
         fields="__all__"
+        
+class CommentSerialiser_add(serializers.ModelSerializer):
+    # author = UserSerializer()
+    class Meta:
+        model = Comment
+        fields = ('uid', 'author', 'post', 'text', 'created_at')
 
 class CommentSerializer_save(serializers.ModelSerializer):
-   pass
-   
+    # author = UserSerializer( read_only=True)
+    # post = PostSerializer_for_comment( read_only=True)
+    class Meta:
+        model=Comment
+        fields = ('uid', 'author', 'post', 'created_at', 'updated_at', 'text')
+    def validate(self,data):
+        print('================================')
+        print(data['author'])
+        print(data['post'])
+        print('================================')
+        return data
+
         
 class LikeSerialiser(serializers.ModelSerializer):
     class Meta:
-        model=Like
-        fields="__all__"
-
+        model = Comment
+        fields = ('uid', 'author', 'post', 'created_at', 'updated_at', 'text')
+        
 class PostSerialiser(serializers.ModelSerializer):
     author = UserSerializer( read_only=True)
     comments = CommentSerialiser(many=True, read_only=True)
