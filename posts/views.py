@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from posts.models import Post,Like,Comment
 from accounts.models import User
-from posts.serialiser import PostSerialiser,PostListSerialiser,CommentSerialiser,LikeSerialiser,CommentSerializer_save,CommentSerialiser_add
+from posts.serialiser import PostSerialiser,PostListSerialiser,CommentSerialiser,LikeSerialiser,CommentSerializer_save,CommentSerialiser_add,UserSerializer,PostSerializer_for_comment,UserPostListSerialiser
 from rest_framework.permissions import IsAuthenticated
 
 
@@ -24,6 +24,14 @@ class PostList(APIView):
             return Response(serialiser.data,status=status.HTTP_201_CREATED)
         return Response(serialiser.errors,status=status.HTTP_400_BAD_REQUEST)
 
+class UserPostsView(APIView):
+    permission_classes =[IsAuthenticated]
+    
+    def get(self,request,pk):
+        my_posts=Post.objects.filter(author=pk)
+        serialiser=UserPostListSerialiser(my_posts,many=True)
+        return Response(serialiser.data)
+    
 class PostDetailsView(APIView):
     
     def get_object(self,pk):
@@ -73,7 +81,12 @@ class CommentList(APIView):
                 serializer = CommentSerialiser_add(data=data)
                 if serializer.is_valid():
                     serializer.save()
-                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                    author_data = UserSerializer(request.user).data
+                    post_data = PostSerializer_for_comment(post).data
+                    comment_data = serializer.data
+                    comment_data['author'] = author_data
+                    comment_data['post'] = post_data
+                    return Response(comment_data, status=status.HTTP_201_CREATED)
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({"message": "Invalid post id"}, status=status.HTTP_400_BAD_REQUEST)
@@ -128,3 +141,20 @@ class CommentDetail(APIView):
             return Response({"message":"comment deleted successfully."},status=status.HTTP_204_NO_CONTENT)
         else:
             return Response({"message":"comment not found."},status=status.HTTP_404_NOT_FOUND)
+
+
+class LikeView(APIView):
+    permission_classes =[IsAuthenticated]
+    
+    def post(self,request,post_id):
+        post=Post.objects.get(pk=post_id)
+        user=request.user
+        like=Like.objects.filter(user=user,post=post)
+        if like :
+            like.delete()
+            return Response({"message":"You have unliked the post."},status=status.HTTP_200_OK)
+        else:
+            like=Like(user=user,post=post)
+            like.save()
+            return Response({"message":"You have liked the post."},status=status.HTTP_200_OK)
+          

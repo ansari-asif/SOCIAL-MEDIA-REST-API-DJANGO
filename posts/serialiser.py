@@ -21,10 +21,13 @@ class CommentSerialiser(serializers.ModelSerializer):
         fields="__all__"
         
 class CommentSerialiser_add(serializers.ModelSerializer):
-    # author = UserSerializer()
+    # author = UserSerializer(read_only=True)
     class Meta:
         model = Comment
         fields = ('uid', 'author', 'post', 'text', 'created_at')
+    def validate(self,data):
+        print(data)
+        return data
 
 class CommentSerializer_save(serializers.ModelSerializer):
     # author = UserSerializer( read_only=True)
@@ -42,12 +45,13 @@ class CommentSerializer_save(serializers.ModelSerializer):
         
 class LikeSerialiser(serializers.ModelSerializer):
     class Meta:
-        model = Comment
-        fields = ('uid', 'author', 'post', 'created_at', 'updated_at', 'text')
+        model = Like
+        fields = '__all__'
         
 class PostSerialiser(serializers.ModelSerializer):
     author = UserSerializer( read_only=True)
     comments = CommentSerialiser(many=True, read_only=True)
+
 
     class Meta:
         model=Post
@@ -68,6 +72,15 @@ class PostSerialiser(serializers.ModelSerializer):
 class PostListSerialiser(serializers.ModelSerializer):
     author = UserSerializer(read_only=True) 
     comments = CommentSerialiser(many=True, read_only=True)
+    likes = LikeSerialiser(many=True, read_only=True)
+    class Meta:
+        model=Post
+        fields="__all__"
+
+class UserPostListSerialiser(serializers.ModelSerializer):
+    author = UserSerializer(read_only=True) 
+    comments = CommentSerialiser(many=True, read_only=True)
+    likes = LikeSerialiser(many=True, read_only=True)
     class Meta:
         model=Post
         fields="__all__"
